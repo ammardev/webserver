@@ -31,22 +31,30 @@ func handleConnection(connection net.Conn) {
 
 	request, err := messages.NewRequest(connection)
 	if err != nil {
-		connection.Write([]byte(err.Error() + "\r\n"))
+		messages.ResponseWithError(connection, err)
 		return
 	}
 
+	file, err := getFileContentsByURI(request.URI)
+	if err != nil {
+		messages.ResponseWithError(connection, err)
+		return
+	}
+
+	messages.ResponseWithHtmlFile(connection, file)
+}
+
+func getFileContentsByURI(uri string) ([]byte, messages.HttpError) {
 	fileName := "index.html"
 
-	if request.URI != "/" {
-		fileName = request.URI
+	if uri != "/" {
+		fileName = uri
 	}
 
 	file, err := os.ReadFile("./public/" + fileName)
 	if err != nil {
-		connection.Write([]byte("HTTP/1.0 404 File Not Found\r\n"))
-		return
+		return nil, messages.NotFoundErr{}
 	}
 
-	connection.Write([]byte("HTTP/1.0 200 Success\r\n\r\n"))
-	connection.Write(file)
+	return []byte(file), nil
 }

@@ -2,7 +2,6 @@ package messages
 
 import (
 	"bufio"
-	"errors"
 	"log"
 	"net"
 	"strings"
@@ -18,7 +17,7 @@ type Request struct {
 	Body    []byte
 }
 
-func NewRequest(connection net.Conn) (*Request, error) {
+func NewRequest(connection net.Conn) (*Request, HttpError) {
 	reader := newRequestReader(connection)
 
 	request := Request{}
@@ -38,23 +37,23 @@ func NewRequest(connection net.Conn) (*Request, error) {
 	return &request, nil
 }
 
-func (req *Request) setMethod(method string) error {
+func (req *Request) setMethod(method string) HttpError {
 	switch method {
 	case "GET":
 		req.Method = method
 	default:
-		return errors.New("HTTP/1.0 501 Only GET is supported")
+		return NotImplementedErr{}
 	}
 
 	return nil
 }
 
-func (req *Request) setVersion(version string) error {
+func (req *Request) setVersion(version string) HttpError {
 	switch version {
 	case "HTTP/1.0", "HTTP/1.1":
 		req.Version = version
 	default:
-		return errors.New("HTTP/1.0 505 HTTP Version Not Supported")
+		return HttpVersionNotSupportedErr{}
 	}
 
 	return nil

@@ -1,12 +1,11 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"log"
 	"net"
 	"os"
-	"strings"
+
+	"github.com/ammardev/webserver/messages"
 )
 
 func main() {
@@ -27,38 +26,23 @@ func main() {
     }
 }
 
+
 func handleConnection(connection net.Conn) {
     defer connection.Close()
 
-    connectionReader := bufio.NewReader(connection)
-
-    requestLine, _, err := connectionReader.ReadLine()
+    request, err := messages.NewRequest(connection)
     if err != nil {
-        log.Fatalln(err)
-    }
-
-
-    if !bytes.Equal(requestLine[:3], []byte("GET")) {
-        connection.Write([]byte("HTTP/1.0 501 Only GET is supported\r\n"))
+        connection.Write([]byte(err.Error() + "\r\n"))
         return
     }
 
-    var pathBuilder strings.Builder
+    fileName := "index.html"
 
-    for _, byte := range requestLine[4:] {
-        if byte == ' ' {
-            break
-        }
-        pathBuilder.WriteByte(byte)
+    if request.URI != "/" {
+        fileName = request.URI
     }
 
-    path := pathBuilder.String()
-
-    if path == "/" {
-        path = "index.html"
-    }
-
-    file, err := os.ReadFile("./public/" + path)
+    file, err := os.ReadFile("./public/" + fileName)
     if err != nil {
         connection.Write([]byte("HTTP/1.0 404 File Not Found\r\n"))
         return

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -9,7 +11,12 @@ import (
 )
 
 func main() {
-	listener, err := net.Listen("tcp", "0.0.0.0:9000")
+	host := flag.String("host", "localhost", "The host to serve HTTP on")
+	port := flag.Int("port", 9000, "The port we serve HTTP on")
+
+	flag.Parse()
+
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *host, *port))
 	if err != nil {
 		log.Fatalln(err)
 	}

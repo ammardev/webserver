@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"log/slog"
 	"net"
 	"os"
 
@@ -13,13 +14,32 @@ import (
 func main() {
 	host := flag.String("host", "localhost", "The host to serve HTTP on")
 	port := flag.Int("port", 9000, "The port we serve HTTP on")
+	debug := flag.Bool("debug", false, "Show debug logging")
 
 	flag.Parse()
+
+	var loggingLevel slog.Level
+
+	if *debug {
+		loggingLevel = slog.LevelDebug
+	} else {
+		loggingLevel = slog.LevelInfo
+	}
+
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: loggingLevel,
+	})))
 
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *host, *port))
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	slog.Info(
+		"Start serving HTTP",
+		"host", *host,
+		"port", *port,
+	)
 
 	defer listener.Close()
 
@@ -34,7 +54,11 @@ func main() {
 }
 
 func handleConnection(connection net.Conn) {
-	defer connection.Close()
+	slog.Debug("Handling new connection", "addr", connection.RemoteAddr())
+	defer func() {
+		slog.Debug("Closing connection", "addr", connection.RemoteAddr())
+		connection.Close()
+	}()
 
 	request, err := messages.NewRequest(connection)
 	if err != nil {

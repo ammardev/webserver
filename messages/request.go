@@ -20,7 +20,9 @@ type Request struct {
 func NewRequest(connection net.Conn) (*Request, HttpError) {
 	reader := newRequestReader(connection)
 
-	request := Request{}
+	request := Request{
+		Headers: make(HttpHeaders, 10),
+	}
 
 	err := request.setMethod(reader.ReadToSP())
 	if err != nil {
@@ -33,6 +35,8 @@ func NewRequest(connection net.Conn) (*Request, HttpError) {
 	if err != nil {
 		return nil, err
 	}
+
+	reader.ReadHeaders(&request)
 
 	return &request, nil
 }
@@ -99,4 +103,21 @@ func (reader *RequestReader) ReadToCRLF() string {
 	}
 
 	return strings.TrimSpace(token)
+}
+
+func (reader *RequestReader) ReadHeaders(request *Request) {
+	for {
+		lines, _, err := reader.bufioReader.ReadLine()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if len(lines) == 0 {
+			break
+		}
+
+		header := strings.Split(string(lines), ": ")
+
+		request.Headers[header[0]] = header[1]
+	}
 }

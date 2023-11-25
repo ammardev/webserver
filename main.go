@@ -41,7 +41,7 @@ func handleConnection(connection net.Conn) {
 		return
 	}
 
-	messages.ResponseWithHtmlFile(connection, file)
+	messages.ResponseWithFile(connection, file)
 }
 
 func getFileContentsByURI(uri string) ([]byte, messages.HttpError) {
